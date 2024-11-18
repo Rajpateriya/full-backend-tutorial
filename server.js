@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 
-mongoose.connect("mongodb://localhost:27017/tutorial")
+mongoose.connect(process.env.DB)
 .then(()=>console.log('Mongodb connected'))
 
 
@@ -151,9 +151,8 @@ app.delete('/del/:id' , verifyToken ,async(req,res)=>{
         res.status(500).json({message : error.message})
     }
 })
+const port = 8000 || process.env.PORT
 
-
-
-app.listen(8000 , ()=>{
+app.listen(port , ()=>{
     console.log('Server is listeninngg...');
 })
