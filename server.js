@@ -5,6 +5,8 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
+const cluster = require('cluster');
+const os = require('os');
 dotenv.config();
 const app = express();
 
@@ -73,7 +75,7 @@ app.post('/login', async(req,res)=>{
 
         const user = await User.findOne({email});
 
-        if(!email){
+        if(!user){
             res.status(404).json({message :"User not found"})
         }
         const isMatch = await bcrypt.compare(password , user.password);
@@ -153,6 +155,21 @@ app.delete('/del/:id' , verifyToken ,async(req,res)=>{
 })
 const port = 8000 || process.env.PORT
 
-app.listen(port , ()=>{
-    console.log('Server is listeninngg...');
-})
+if (cluster.isMaster) {
+    // Fork workers for each CPU core
+    const numCPUs = os.cpus().length;
+    
+    for (let i = 0; i < numCPUs; i++) {
+        cluster.fork();  // Spawn a worker for each CPU core
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+        console.log(`Worker ${worker.process.pid} died`);
+    });
+} else {
+    // Worker processes have their own HTTP server
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => {
+        console.log(`Worker ${process.pid} started on port ${port}`);
+    });
+}
